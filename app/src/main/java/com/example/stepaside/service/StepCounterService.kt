@@ -69,15 +69,34 @@ class StepCounterService : Service(), SensorEventListener {
         val totalSensorSteps = event.values[0].toInt()
 
         if (sensorStepsAtBoot < 0) {
-            // First reading — calibrate baseline
             sensorStepsAtBoot = totalSensorSteps - stepsToday
         }
 
-        stepsToday = totalSensorSteps - sensorStepsAtBoot
+        val newStepsToday = totalSensorSteps - sensorStepsAtBoot
+        val stepDelta = newStepsToday - stepsToday  // hur många NYA steg sedan senaste läsning
+        stepsToday = newStepsToday
         val goalReached = stepsToday >= goalSteps
 
         serviceScope.launch {
+            // Uppdatera dagens steg
             db.dailyStepsDao().updateSteps(today, stepsToday, goalReached)
+
+            // Uppdatera lifetime stats med delta
+            if (stepDelta > 0) {
+                val distanceDelta = stepDelta * 0.762f  // meter per steg
+                val existing = db.lifetimeStatsDao().get()
+                if (existing != null) {
+                    db.lifetimeStatsDao().addSteps(stepDelta.toLong(), distanceDelta)
+                } else {
+                    db.lifetimeStatsDao().upsert(
+                        com.example.stepaside.data.db.LifetimeStats(
+                            totalSteps = stepDelta.toLong(),
+                            totalDistanceMeters = distanceDelta
+                        )
+                    )
+                }
+            }
+
             updateNotification(stepsToday, goalSteps)
             updateWidget()
         }
