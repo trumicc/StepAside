@@ -1,0 +1,41 @@
+package com.example.stepaside.data.db
+
+import android.content.Context
+import androidx.room.Database
+import androidx.room.Room
+import androidx.room.RoomDatabase
+
+@Database(
+    entities = [
+        DailySteps::class,
+        WalkSession::class,
+        RoutePoint::class,
+        LifetimeStats::class
+    ],
+    version = 1,
+    exportSchema = false
+)
+abstract class AppDatabase : RoomDatabase() {
+
+    abstract fun dailyStepsDao(): DailyStepsDao
+    abstract fun walkSessionDao(): WalkSessionDao
+    abstract fun routePointDao(): RoutePointDao
+    abstract fun lifetimeStatsDao(): LifetimeStatsDao
+
+    companion object {
+        @Volatile
+        private var INSTANCE: AppDatabase? = null
+
+        fun getInstance(context: Context): AppDatabase {
+            return INSTANCE ?: synchronized(this) {
+                val instance = Room.databaseBuilder(
+                    context.applicationContext,
+                    AppDatabase::class.java,
+                    "stepaside.db"
+                ).build()
+                INSTANCE = instance
+                instance
+            }
+        }
+    }
+}
