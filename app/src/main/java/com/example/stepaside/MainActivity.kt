@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
 import com.example.stepaside.ui.theme.StepAsideTheme
+import io.github.jan.supabase.auth.auth
 
 class MainActivity : ComponentActivity() {
 
@@ -46,11 +47,16 @@ class MainActivity : ComponentActivity() {
             StepAsideTheme {
                 val prefs2 = getSharedPreferences("stepaside_prefs", MODE_PRIVATE)
                 var consentDone by remember { mutableStateOf(prefs2.getBoolean("consent_given", false)) }
+                var authDone by remember { mutableStateOf(supabase.auth.currentUserOrNull() != null) }
 
                 if (!consentDone) {
                     ConsentScreen(onConsentGiven = {
                         consentDone = true
                         requestPermissionsAndStart()
+                    })
+                } else if (!authDone) {
+                    AuthScreen(onAuthSuccess = {
+                        authDone = true
                     })
                 } else {
                     var currentScreen by remember { mutableStateOf("home") }

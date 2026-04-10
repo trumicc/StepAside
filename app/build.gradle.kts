@@ -50,6 +50,11 @@ dependencies {
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.material3:material3")
 
+    // Supbase
+    implementation("io.github.jan-tennert.supabase:postgrest-kt:3.0.0")
+    implementation("io.github.jan-tennert.supabase:auth-kt:3.0.0")
+    implementation("io.ktor:ktor-client-android:3.1.3")
+
     // Room
     implementation("androidx.room:room-runtime:2.8.4")
     implementation("androidx.room:room-ktx:2.8.4")
