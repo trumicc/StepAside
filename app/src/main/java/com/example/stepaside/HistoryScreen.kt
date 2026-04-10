@@ -32,6 +32,30 @@ fun HistoryScreen() {
         }
     }
 
+    // Calculate streak
+    val streak = remember(history) {
+        val sorted = history.sortedByDescending { it.dateStr }
+        var count = 0
+        var expectedDate = LocalDate.now()
+        for (day in sorted) {
+            val date = try { LocalDate.parse(day.dateStr) } catch (e: Exception) { break }
+            if (date == expectedDate && day.goalReached) {
+                count++
+                expectedDate = expectedDate.minusDays(1)
+            } else if (date == expectedDate && !day.goalReached) {
+                break
+            } else {
+                break
+            }
+        }
+        count
+    }
+
+    // Best day
+    val bestDay = remember(history) {
+        history.maxByOrNull { it.steps }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -41,17 +65,93 @@ fun HistoryScreen() {
     ) {
         Spacer(modifier = Modifier.height(24.dp))
 
-        Text(
-            text = "History",
-            color = Color.White,
-            fontSize = 24.sp,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(bottom = 16.dp)
-        )
+        Text("History", color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold)
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Streak + Best day cards
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            // Streak card
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .background(Color(0xFF161B22), RoundedCornerShape(12.dp))
+                    .padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text("🔥", fontSize = 28.sp)
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "$streak",
+                    color = Color.White,
+                    fontSize = 32.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = if (streak == 1) "day streak" else "day streak",
+                    color = Color(0xFF8B949E),
+                    fontSize = 12.sp
+                )
+                if (streak == 0) {
+                    Text(
+                        text = "Hit your goal to start!",
+                        color = Color(0xFF8B949E),
+                        fontSize = 10.sp
+                    )
+                }
+            }
+
+            // Best day card
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .background(Color(0xFF161B22), RoundedCornerShape(12.dp))
+                    .padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text("⭐", fontSize = 28.sp)
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = if (bestDay != null) "%,d".format(bestDay.steps) else "—",
+                    color = Color.White,
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = "best day",
+                    color = Color(0xFF8B949E),
+                    fontSize = 12.sp
+                )
+                if (bestDay != null) {
+                    val date = try {
+                        LocalDate.parse(bestDay.dateStr).format(
+                            DateTimeFormatter.ofPattern("MMM d", Locale.ENGLISH)
+                        )
+                    } catch (e: Exception) { "" }
+                    Text(
+                        text = date,
+                        color = Color(0xFF39D353),
+                        fontSize = 11.sp
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
 
         if (history.isEmpty()) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("No history yet — start walking!", color = Color(0xFF8B949E), fontSize = 15.sp)
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    "No history yet — start walking!",
+                    color = Color(0xFF8B949E),
+                    fontSize = 15.sp
+                )
             }
         } else {
             LazyColumn(
@@ -95,7 +195,12 @@ fun DayCard(day: DailySteps) {
                 fontWeight = FontWeight.Medium
             )
             if (day.goalReached) {
-                Text("✓ Goal", color = Color(0xFF39D353), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                Text(
+                    "✓ Goal",
+                    color = Color(0xFF39D353),
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold
+                )
             }
         }
 
