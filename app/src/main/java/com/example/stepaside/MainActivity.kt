@@ -10,6 +10,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
@@ -47,14 +48,25 @@ class MainActivity : ComponentActivity() {
             StepAsideTheme {
                 val prefs2 = getSharedPreferences("stepaside_prefs", MODE_PRIVATE)
                 var consentDone by remember { mutableStateOf(prefs2.getBoolean("consent_given", false)) }
-                var authDone by remember { mutableStateOf(supabase.auth.currentUserOrNull() != null) }
+                var isLoadingAuth by remember { mutableStateOf(true) }
+                var authDone by remember { mutableStateOf(false) }
 
-                if (!consentDone) {
-                    ConsentScreen(onConsentGiven = {
-                        consentDone = true
-                        requestPermissionsAndStart()
-                    })
-                } else if (!authDone) {
+                LaunchedEffect(Unit) {
+                    try {
+                        supabase.auth.loadFromStorage()
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                    authDone = supabase.auth.currentUserOrNull() != null
+                    isLoadingAuth = false
+                }
+
+                if (isLoadingAuth) {
+                    Box(modifier = Modifier.fillMaxSize().background(Color(0xFF0D1117)),
+                        contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(color = Color(0xFF39D353))
+                    }
+                } else if (!consentDone) {
                     AuthScreen(onAuthSuccess = {
                         authDone = true
                     })
@@ -67,6 +79,7 @@ class MainActivity : ComponentActivity() {
                             "history" -> HistoryScreen()
                             "achievements" -> AchievementsScreen()
                             "stats" -> StatsScreen()
+                            "profile" -> ProfileScreen(onLogout = { authDone = false })
                         }
                         Row(
                             modifier = Modifier
@@ -90,6 +103,9 @@ class MainActivity : ComponentActivity() {
                             }
                             TextButton(onClick = { currentScreen = "stats" }) {
                                 Text("📊", color = if (currentScreen == "stats") Color(0xFF39D353) else Color(0xFF8B949E), fontSize = 20.sp)
+                            }
+                            TextButton(onClick = { currentScreen = "profile" }) {
+                                Text("👤", color = if (currentScreen == "profile") Color(0xFF39D353) else Color(0xFF8B949E), fontSize = 20.sp)
                             }
                         }
                     }

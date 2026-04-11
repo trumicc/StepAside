@@ -1,108 +1,84 @@
 package com.example.stepaside
 
-import android.content.Context
-import android.os.VibrationEffect
-import android.os.Vibrator
-import androidx.compose.animation.*
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
-import kotlinx.coroutines.delay
+import androidx.compose.ui.window.DialogProperties
 
 @Composable
-fun AchievementPopup(
-    achievement: Achievement,
-    onDismiss: () -> Unit
-) {
-    val context = LocalContext.current
-    var visible by remember { mutableStateOf(false) }
-
-    val scale by animateFloatAsState(
-        targetValue = if (visible) 1f else 0.5f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessMedium
-        )
-    )
-
-    val emojiScale by animateFloatAsState(
-        targetValue = if (visible) 1f else 0f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioLowBouncy,
-            stiffness = Spring.StiffnessLow
-        )
-    )
+fun AchievementPopup(achievement: Achievement, onDismiss: () -> Unit) {
+    val scale = remember { Animatable(0f) }
 
     LaunchedEffect(Unit) {
-        visible = true
-        // Vibration pattern
-        val vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
-        vibrator.vibrate(
-            VibrationEffect.createWaveform(
-                longArrayOf(0, 100, 50, 100, 50, 200),
-                intArrayOf(0, 255, 0, 200, 0, 150),
-                -1
+        scale.animateTo(
+            targetValue = 1f,
+            animationSpec = spring(
+                dampingRatio = Spring.DampingRatioMediumBouncy,
+                stiffness = Spring.StiffnessMedium
             )
         )
-        // Auto-dismiss after 4 seconds
-        delay(4000)
-        onDismiss()
     }
 
-    Dialog(onDismissRequest = onDismiss) {
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
         Box(
             modifier = Modifier
-                .scale(scale)
-                .fillMaxWidth()
-                .background(Color(0xFF161B22), RoundedCornerShape(24.dp))
-                .padding(32.dp),
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.7f)),
             contentAlignment = Alignment.Center
         ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Column(
+                modifier = Modifier
+                    .scale(scale.value)
+                    .padding(32.dp)
+                    .background(Color(0xFF161B22), RoundedCornerShape(24.dp))
+                    .padding(32.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
                 Text(
-                    text = "🏆",
-                    fontSize = 20.sp,
+                    text = "🎉 Achievement Unlocked!",
                     color = Color(0xFF39D353),
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 2.sp
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Text(
-                    text = "Achievement Unlocked!",
-                    fontSize = 14.sp,
-                    color = Color(0xFF8B949E),
-                    fontWeight = FontWeight.Medium
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold
                 )
 
                 Spacer(modifier = Modifier.height(20.dp))
 
-                Text(
-                    text = achievement.emoji,
-                    fontSize = 72.sp,
-                    modifier = Modifier.scale(emojiScale)
-                )
+                // Bild eller emoji
+                if (achievement.imageRes != null) {
+                    Image(
+                        painter = painterResource(id = achievement.imageRes),
+                        contentDescription = achievement.title,
+                        modifier = Modifier.size(140.dp)
+                    )
+                } else {
+                    Text(achievement.emoji, fontSize = 80.sp)
+                }
 
                 Spacer(modifier = Modifier.height(16.dp))
 
                 Text(
                     text = achievement.title,
                     color = Color.White,
-                    fontSize = 26.sp,
+                    fontSize = 24.sp,
                     fontWeight = FontWeight.Bold,
                     textAlign = TextAlign.Center
                 )
@@ -118,16 +94,13 @@ fun AchievementPopup(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                Box(
-                    modifier = Modifier
-                        .background(Color(0xFF39D353).copy(alpha = 0.15f), RoundedCornerShape(8.dp))
-                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                Button(
+                    onClick = onDismiss,
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF39D353)),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text(
-                        text = "Tap to dismiss",
-                        color = Color(0xFF39D353),
-                        fontSize = 13.sp
-                    )
+                    Text("Awesome! 🙌", color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 16.sp)
                 }
             }
         }

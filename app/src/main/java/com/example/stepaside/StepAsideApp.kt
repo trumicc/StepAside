@@ -4,7 +4,10 @@ import android.app.Application
 import androidx.work.*
 import com.example.stepaside.data.db.AppDatabase
 import com.example.stepaside.sync.SupabaseSyncWorker
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 import java.util.concurrent.TimeUnit
+import io.github.jan.supabase.auth.auth
 
 class StepAsideApp : Application() {
 
@@ -14,6 +17,14 @@ class StepAsideApp : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        // Ladda sparad session vid start
+        GlobalScope.launch {
+            try {
+                supabase.auth.loadFromStorage()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
         scheduleSyncWork()
     }
 

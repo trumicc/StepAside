@@ -1,5 +1,6 @@
 package com.example.stepaside
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -10,7 +11,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -43,10 +47,7 @@ fun AchievementsScreen() {
     }
 
     popupAchievement?.let { achievement ->
-        AchievementPopup(
-            achievement = achievement,
-            onDismiss = { popupAchievement = null }
-        )
+        AchievementPopup(achievement = achievement, onDismiss = { popupAchievement = null })
     }
 
     val achievements = ALL_ACHIEVEMENTS.map { it.copy(unlocked = totalSteps >= it.requiredSteps) }
@@ -60,17 +61,9 @@ fun AchievementsScreen() {
             .padding(horizontal = 16.dp)
     ) {
         Spacer(modifier = Modifier.height(24.dp))
-
         Text("Achievements", color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold)
-
         Spacer(modifier = Modifier.height(4.dp))
-
-        Text(
-            "$unlocked / ${achievements.size} unlocked",
-            color = Color(0xFF8B949E),
-            fontSize = 13.sp
-        )
-
+        Text("$unlocked / ${achievements.size} unlocked", color = Color(0xFF8B949E), fontSize = 13.sp)
         Spacer(modifier = Modifier.height(16.dp))
 
         LazyColumn(
@@ -87,6 +80,7 @@ fun AchievementsScreen() {
 @Composable
 fun AchievementCard(achievement: Achievement, totalSteps: Long) {
     val progress = (totalSteps.toFloat() / achievement.requiredSteps).coerceIn(0f, 1f)
+    val grayscale = ColorMatrix().apply { setToSaturation(0f) }
 
     Row(
         modifier = Modifier
@@ -98,12 +92,25 @@ fun AchievementCard(achievement: Achievement, totalSteps: Long) {
             .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(
-            text = achievement.emoji,
-            fontSize = 32.sp,
-            modifier = Modifier.padding(end = 16.dp),
-            color = if (achievement.unlocked) Color.White else Color(0xFF8B949E)
-        )
+        // Bild eller emoji
+        if (achievement.imageRes != null) {
+            Image(
+                painter = painterResource(id = achievement.imageRes),
+                contentDescription = achievement.title,
+                modifier = Modifier
+                    .size(56.dp)
+                    .padding(end = 12.dp),
+                colorFilter = if (!achievement.unlocked)
+                    ColorFilter.colorMatrix(grayscale) else null
+            )
+        } else {
+            Text(
+                text = achievement.emoji,
+                fontSize = 32.sp,
+                modifier = Modifier.padding(end = 16.dp),
+                color = if (achievement.unlocked) Color.White else Color(0xFF8B949E)
+            )
+        }
 
         Column(modifier = Modifier.weight(1f)) {
             Row(
