@@ -1,5 +1,6 @@
 package com.example.stepaside
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -9,13 +10,17 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -31,16 +36,29 @@ import kotlinx.serialization.Serializable
 data class Profile(
     val id: String,
     val display_name: String? = null,
-    val avatar_color: String = "#1D9E75",
+    val avatar_color: String = "lilo",
     val height_cm: Int = 0,
     val weight_kg: Float = 0f,
     val goal_steps: Int = 10000
 )
 
-val AVATAR_OPTIONS = listOf(
-    "🏃", "🚶", "⚡", "🌟", "🔥",
-    "💪", "🎯", "🏆", "🌿", "❄️"
+data class AvatarItem(val id: String, val imageRes: Int)
+
+val AVATAR_LIST = listOf(
+    AvatarItem("lilo", R.drawable.profile_avatar_lilo),
+    AvatarItem("avatar1", R.drawable.profile_avatar1),
+    AvatarItem("avatar2", R.drawable.profile_avatar2),
+    AvatarItem("avatar3", R.drawable.profile_avatar3),
+    AvatarItem("avatar4", R.drawable.profile_avatar4),
+    AvatarItem("avatar5", R.drawable.profile_avatar5),
+    AvatarItem("avatar6", R.drawable.profile_avatar6),
+    AvatarItem("avatar7", R.drawable.profile_avatar7),
+    AvatarItem("avatar8", R.drawable.profile_avatar8),
+    AvatarItem("avatar9", R.drawable.profile_avatar9),
 )
+
+fun getAvatarRes(id: String): Int =
+    AVATAR_LIST.find { it.id == id }?.imageRes ?: R.drawable.profile_avatar_lilo
 
 @Composable
 fun ProfileScreen(onLogout: () -> Unit) {
@@ -48,39 +66,39 @@ fun ProfileScreen(onLogout: () -> Unit) {
     val db = (context.applicationContext as StepAsideApp).database
     val scope = rememberCoroutineScope()
 
+    var profile by remember { mutableStateOf<Profile?>(null) }
+    var isEditing by remember { mutableStateOf(false) }
+
     var displayName by remember { mutableStateOf("") }
-    var selectedAvatar by remember { mutableStateOf("🏃") }
+    var selectedAvatarId by remember { mutableStateOf("lilo") }
     var heightInput by remember { mutableStateOf("") }
     var weightInput by remember { mutableStateOf("") }
     var goalInput by remember { mutableStateOf("10000") }
+    var isSaving by remember { mutableStateOf(false) }
+
     var totalSteps by remember { mutableStateOf(0L) }
     var totalDistance by remember { mutableStateOf(0f) }
-    var isSaving by remember { mutableStateOf(false) }
-    var saveMessage by remember { mutableStateOf("") }
 
     val userId = supabase.auth.currentUserOrNull()?.id
 
-    // Load profile
     LaunchedEffect(Unit) {
         try {
             if (userId != null) {
-                val profile = supabase.postgrest["profiles"]
-                    .select(Columns.ALL) {
-                        filter { eq("id", userId) }
-                    }
-                    .decodeSingleOrNull<Profile>()
+                val result = supabase.postgrest["profiles"]
+                    .select(Columns.ALL) { filter { eq("id", userId) } }
+                    .decodeList<Profile>()
 
-                profile?.let {
+                val p = result.firstOrNull()
+                profile = p
+                p?.let {
                     displayName = it.display_name ?: ""
-                    selectedAvatar = it.avatar_color
+                    selectedAvatarId = it.avatar_color.ifEmpty { "lilo" }
                     heightInput = if (it.height_cm > 0) it.height_cm.toString() else ""
-                    weightInput = if (it.weight_kg > 0) it.weight_kg.toString() else ""
+                    weightInput = if (it.weight_kg > 0f) it.weight_kg.toString() else ""
                     goalInput = it.goal_steps.toString()
                 }
             }
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
+        } catch (e: Exception) { e.printStackTrace() }
 
         db.lifetimeStatsDao().getFlow().collectLatest { stats ->
             totalSteps = stats?.totalSteps ?: 0L
@@ -103,7 +121,6 @@ fun ProfileScreen(onLogout: () -> Unit) {
         ) {
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Header
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -111,190 +128,243 @@ fun ProfileScreen(onLogout: () -> Unit) {
             ) {
                 Text("Profile", color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold)
 
-                // Logout button
-                Button(
-                    onClick = {
-                        scope.launch {
-                            supabase.auth.signOut()
-                            onLogout()
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    if (!isEditing) {
+                        IconButton(onClick = { isEditing = true }) {
+                            Icon(Icons.Filled.Edit, contentDescription = "Edit", tint = Color(0xFF39D353))
                         }
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFCF2626)),
-                    shape = RoundedCornerShape(8.dp),
-                    modifier = Modifier.height(36.dp)
-                ) {
-                    Text("Logout", color = Color.White, fontSize = 13.sp)
+                    }
+                    Button(
+                        onClick = { scope.launch { supabase.auth.signOut(); onLogout() } },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFCF2626)),
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier.height(36.dp)
+                    ) {
+                        Text("Logout", color = Color.White, fontSize = 13.sp)
+                    }
                 }
             }
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Avatar selection
-            Text("Avatar", color = Color(0xFF8B949E), fontSize = 13.sp, fontWeight = FontWeight.Medium)
-            Spacer(modifier = Modifier.height(10.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                AVATAR_OPTIONS.forEach { emoji ->
-                    Box(
-                        modifier = Modifier
-                            .size(44.dp)
-                            .clip(CircleShape)
-                            .background(
-                                if (selectedAvatar == emoji) Color(0xFF39D353).copy(alpha = 0.2f)
-                                else Color(0xFF161B22)
-                            )
-                            .border(
-                                width = if (selectedAvatar == emoji) 2.dp else 0.dp,
-                                color = if (selectedAvatar == emoji) Color(0xFF39D353) else Color.Transparent,
-                                shape = CircleShape
-                            )
-                            .clickable { selectedAvatar = emoji },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(emoji, fontSize = 22.sp)
-                    }
+            if (!isEditing) {
+                // READ MODE
+                Box(
+                    modifier = Modifier
+                        .size(100.dp)
+                        .clip(CircleShape)
+                        .background(Color(0xFF161B22))
+                        .align(Alignment.CenterHorizontally),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Image(
+                        painter = painterResource(id = getAvatarRes(profile?.avatar_color ?: "lilo")),
+                        contentDescription = "Avatar",
+                        modifier = Modifier.size(90.dp).clip(CircleShape),
+                        contentScale = ContentScale.Crop
+                    )
                 }
-            }
 
-            Spacer(modifier = Modifier.height(20.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
-            // Name
-            Text("Display name", color = Color(0xFF8B949E), fontSize = 13.sp, fontWeight = FontWeight.Medium)
-            Spacer(modifier = Modifier.height(8.dp))
-            OutlinedTextField(
-                value = displayName,
-                onValueChange = { displayName = it },
-                placeholder = { Text("Your name", color = Color(0xFF8B949E)) },
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedTextColor = Color.White,
-                    unfocusedTextColor = Color.White,
-                    focusedBorderColor = Color(0xFF39D353),
-                    unfocusedBorderColor = Color(0xFF21262D)
-                ),
-                modifier = Modifier.fillMaxWidth()
-            )
+                Text(
+                    text = profile?.display_name?.ifEmpty { "No name set" } ?: "No name set",
+                    color = Color.White,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                )
 
-            Spacer(modifier = Modifier.height(20.dp))
+                Spacer(modifier = Modifier.height(24.dp))
 
-            // Goal, height, weight
-            Text("Settings", color = Color(0xFF8B949E), fontSize = 13.sp, fontWeight = FontWeight.Medium)
-            Spacer(modifier = Modifier.height(10.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    InfoCard(Modifier.weight(1f), "Height", if ((profile?.height_cm ?: 0) > 0) "${profile?.height_cm} cm" else "—")
+                    InfoCard(Modifier.weight(1f), "Weight", if ((profile?.weight_kg ?: 0f) > 0f) "${profile?.weight_kg} kg" else "—")
+                    InfoCard(Modifier.weight(1f), "Daily Goal", "%,d".format(profile?.goal_steps ?: 10000))
+                }
 
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Spacer(modifier = Modifier.height(24.dp))
+
+                Text("Lifetime Stats", color = Color(0xFF8B949E), fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                Spacer(modifier = Modifier.height(10.dp))
+
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    StatCard(Modifier.weight(1f), "👣", "Total Steps", "%,d".format(totalSteps))
+                    StatCard(Modifier.weight(1f), "📍", "Distance", "%.1f km".format(totalDistance / 1000f))
+                }
+
+            } else {
+                // EDIT MODE
+                Text("Choose avatar", color = Color(0xFF8B949E), fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Avatar grid — 5 per rad
+                val rows = AVATAR_LIST.chunked(5)
+                rows.forEach { rowItems ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        rowItems.forEach { avatar ->
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .aspectRatio(1f)
+                                    .clip(CircleShape)
+                                    .background(Color(0xFF161B22))
+                                    .border(
+                                        width = if (selectedAvatarId == avatar.id) 2.dp else 0.dp,
+                                        color = if (selectedAvatarId == avatar.id) Color(0xFF39D353) else Color.Transparent,
+                                        shape = CircleShape
+                                    )
+                                    .clickable { selectedAvatarId = avatar.id },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Image(
+                                    painter = painterResource(id = avatar.imageRes),
+                                    contentDescription = avatar.id,
+                                    modifier = Modifier.fillMaxSize().clip(CircleShape),
+                                    contentScale = ContentScale.Crop
+                                )
+                            }
+                        }
+                        // Fyll ut tomma platser om raden inte är full
+                        repeat(5 - rowItems.size) {
+                            Spacer(modifier = Modifier.weight(1f))
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                OutlinedTextField(
+                    value = displayName,
+                    onValueChange = { displayName = it },
+                    label = { Text("Display name", color = Color(0xFF8B949E)) },
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = Color.White, unfocusedTextColor = Color.White,
+                        focusedBorderColor = Color(0xFF39D353), unfocusedBorderColor = Color(0xFF21262D)
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
                 OutlinedTextField(
                     value = goalInput,
                     onValueChange = { goalInput = it.filter { c -> c.isDigit() } },
-                    label = { Text("Daily goal", color = Color(0xFF8B949E)) },
+                    label = { Text("Daily goal (steps)", color = Color(0xFF8B949E)) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White,
-                        focusedBorderColor = Color(0xFF39D353),
-                        unfocusedBorderColor = Color(0xFF21262D)
+                        focusedTextColor = Color.White, unfocusedTextColor = Color.White,
+                        focusedBorderColor = Color(0xFF39D353), unfocusedBorderColor = Color(0xFF21262D)
                     ),
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.fillMaxWidth()
                 )
-            }
 
-            Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                OutlinedTextField(
-                    value = heightInput,
-                    onValueChange = { heightInput = it.filter { c -> c.isDigit() } },
-                    label = { Text("Height (cm)", color = Color(0xFF8B949E)) },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White,
-                        focusedBorderColor = Color(0xFF39D353),
-                        unfocusedBorderColor = Color(0xFF21262D)
-                    ),
-                    modifier = Modifier.weight(1f)
-                )
-                OutlinedTextField(
-                    value = weightInput,
-                    onValueChange = { weightInput = it.filter { c -> c.isDigit() || it == "." } },
-                    label = { Text("Weight (kg)", color = Color(0xFF8B949E)) },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White,
-                        focusedBorderColor = Color(0xFF39D353),
-                        unfocusedBorderColor = Color(0xFF21262D)
-                    ),
-                    modifier = Modifier.weight(1f)
-                )
-            }
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    OutlinedTextField(
+                        value = heightInput,
+                        onValueChange = { heightInput = it.filter { c -> c.isDigit() } },
+                        label = { Text("Height (cm)", color = Color(0xFF8B949E)) },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = Color.White, unfocusedTextColor = Color.White,
+                            focusedBorderColor = Color(0xFF39D353), unfocusedBorderColor = Color(0xFF21262D)
+                        ),
+                        modifier = Modifier.weight(1f)
+                    )
+                    OutlinedTextField(
+                        value = weightInput,
+                        onValueChange = { weightInput = it.filter { c -> c.isDigit() || c == '.' } },
+                        label = { Text("Weight (kg)", color = Color(0xFF8B949E)) },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = Color.White, unfocusedTextColor = Color.White,
+                            focusedBorderColor = Color(0xFF39D353), unfocusedBorderColor = Color(0xFF21262D)
+                        ),
+                        modifier = Modifier.weight(1f)
+                    )
+                }
 
-            Spacer(modifier = Modifier.height(20.dp))
+                Spacer(modifier = Modifier.height(20.dp))
 
-            // Save button
-            Button(
-                onClick = {
-                    scope.launch {
-                        isSaving = true
-                        try {
-                            if (userId != null) {
-                                supabase.postgrest["profiles"].upsert(
-                                    mapOf(
-                                        "id" to userId,
-                                        "display_name" to displayName,
-                                        "avatar_color" to selectedAvatar,
-                                        "height_cm" to (heightInput.toIntOrNull() ?: 0),
-                                        "weight_kg" to (weightInput.toFloatOrNull() ?: 0f),
-                                        "goal_steps" to (goalInput.toIntOrNull() ?: 10000)
-                                    )
-                                )
-                                // Uppdatera dagligt mål i Room
-                                val today = java.time.LocalDate.now().toString()
-                                val existing = db.dailyStepsDao().getByDate(today)
-                                val newGoal = goalInput.toIntOrNull() ?: 10000
-                                if (existing != null) {
-                                    db.dailyStepsDao().upsert(existing.copy(goalSteps = newGoal))
-                                }
-                                saveMessage = "✓ Saved!"
-                            }
-                        } catch (e: Exception) {
-                            saveMessage = "Error: ${e.message}"
-                        }
-                        isSaving = false
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    OutlinedButton(
+                        onClick = { isEditing = false },
+                        modifier = Modifier.weight(1f).height(52.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF8B949E))
+                    ) {
+                        Text("Cancel")
                     }
-                },
-                modifier = Modifier.fillMaxWidth().height(52.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF39D353)),
-                shape = RoundedCornerShape(12.dp),
-                enabled = !isSaving
-            ) {
-                if (isSaving) {
-                    CircularProgressIndicator(color = Color.Black, modifier = Modifier.size(20.dp))
-                } else {
-                    Text("Save Profile", color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+
+                    Button(
+                        onClick = {
+                            scope.launch {
+                                isSaving = true
+                                try {
+                                    if (userId != null) {
+                                        supabase.postgrest["profiles"].upsert(
+                                            ProfileUpsert(
+                                                id = userId,
+                                                display_name = displayName,
+                                                avatar_color = selectedAvatarId,
+                                                height_cm = heightInput.toIntOrNull() ?: 0,
+                                                weight_kg = weightInput.toFloatOrNull() ?: 0f,
+                                                goal_steps = goalInput.toIntOrNull() ?: 10000
+                                            )
+                                        ) {
+                                            onConflict = "id"
+                                        }
+                                        val today = java.time.LocalDate.now().toString()
+                                        val existing = db.dailyStepsDao().getByDate(today)
+                                        val newGoal = goalInput.toIntOrNull() ?: 10000
+                                        if (existing != null) {
+                                            db.dailyStepsDao().upsert(existing.copy(goalSteps = newGoal))
+                                        }
+                                        profile = profile?.copy(
+                                            display_name = displayName,
+                                            avatar_color = selectedAvatarId,
+                                            height_cm = heightInput.toIntOrNull() ?: 0,
+                                            weight_kg = weightInput.toFloatOrNull() ?: 0f,
+                                            goal_steps = goalInput.toIntOrNull() ?: 10000
+                                        )
+                                        isEditing = false
+                                    }
+                                } catch (e: Exception) { e.printStackTrace() }
+                                isSaving = false
+                            }
+                        },
+                        modifier = Modifier.weight(1f).height(52.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF39D353)),
+                        shape = RoundedCornerShape(12.dp),
+                        enabled = !isSaving
+                    ) {
+                        if (isSaving) CircularProgressIndicator(color = Color.Black, modifier = Modifier.size(20.dp))
+                        else Text("Save", color = Color.Black, fontWeight = FontWeight.Bold)
+                    }
                 }
-            }
-
-            if (saveMessage.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(saveMessage, color = Color(0xFF39D353), fontSize = 13.sp)
-                LaunchedEffect(saveMessage) {
-                    kotlinx.coroutines.delay(2000)
-                    saveMessage = ""
-                }
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Lifetime stats
-            Text("Lifetime Stats", color = Color(0xFF8B949E), fontSize = 13.sp, fontWeight = FontWeight.Medium)
-            Spacer(modifier = Modifier.height(10.dp))
-
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                StatCard(modifier = Modifier.weight(1f), emoji = "👣", label = "Total Steps", value = "%,d".format(totalSteps))
-                StatCard(modifier = Modifier.weight(1f), emoji = "📍", label = "Distance", value = "%.1f km".format(totalDistance / 1000f))
             }
         }
+    }
+}
+
+@Composable
+fun InfoCard(modifier: Modifier = Modifier, label: String, value: String) {
+    Column(
+        modifier = modifier
+            .background(Color(0xFF161B22), RoundedCornerShape(12.dp))
+            .padding(12.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(value, color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+        Text(label, color = Color(0xFF8B949E), fontSize = 11.sp)
     }
 }

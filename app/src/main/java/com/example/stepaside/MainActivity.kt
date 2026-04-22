@@ -10,13 +10,19 @@ import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.DirectionsWalk
+import androidx.compose.material.icons.filled.EmojiEvents
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.InsertChart
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
@@ -46,10 +52,12 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             StepAsideTheme {
-                val prefs2 = getSharedPreferences("stepaside_prefs", MODE_PRIVATE)
+                val context = LocalContext.current
+                val prefs2 = context.getSharedPreferences("stepaside_prefs", MODE_PRIVATE)
                 var consentDone by remember { mutableStateOf(prefs2.getBoolean("consent_given", false)) }
                 var isLoadingAuth by remember { mutableStateOf(true) }
                 var authDone by remember { mutableStateOf(false) }
+                var onboardingDone by remember { mutableStateOf(prefs2.getBoolean("onboarding_done", false)) }
 
                 LaunchedEffect(Unit) {
                     try {
@@ -62,51 +70,131 @@ class MainActivity : ComponentActivity() {
                 }
 
                 if (isLoadingAuth) {
-                    Box(modifier = Modifier.fillMaxSize().background(Color(0xFF0D1117)),
-                        contentAlignment = Alignment.Center) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(Color(0xFF0D1117)),
+                        contentAlignment = Alignment.Center
+                    ) {
                         CircularProgressIndicator(color = Color(0xFF39D353))
                     }
                 } else if (!consentDone) {
+                    ConsentScreen(onConsentGiven = {
+                        consentDone = true
+                        requestPermissionsAndStart()
+                    })
+                } else if (!authDone) {
                     AuthScreen(onAuthSuccess = {
                         authDone = true
+                    })
+                } else if (!onboardingDone) {
+                    OnboardingScreen(onDone = {
+                        onboardingDone = true
                     })
                 } else {
                     var currentScreen by remember { mutableStateOf("home") }
                     Box(modifier = Modifier.fillMaxSize()) {
-                        when (currentScreen) {
-                            "home" -> StepScreen()
-                            "walk" -> WalkScreen()
-                            "history" -> HistoryScreen()
-                            "achievements" -> AchievementsScreen()
-                            "stats" -> StatsScreen()
-                            "profile" -> ProfileScreen(onLogout = { authDone = false })
-                        }
-                        Row(
+                        Box(
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .align(Alignment.BottomCenter)
-                                .background(Color(0xFF161B22))
-                                .padding(vertical = 12.dp),
-                            horizontalArrangement = Arrangement.SpaceEvenly
+                                .fillMaxSize()
+                                .padding(bottom = 80.dp)
                         ) {
-                            TextButton(onClick = { currentScreen = "home" }) {
-                                Text("🏠", color = if (currentScreen == "home") Color(0xFF39D353) else Color(0xFF8B949E), fontSize = 20.sp)
+                            when (currentScreen) {
+                                "home" -> StepScreen()
+                                "walk" -> WalkScreen()
+                                "history" -> HistoryScreen()
+                                "achievements" -> AchievementsScreen()
+                                "stats" -> StatsScreen()
+                                "profile" -> ProfileScreen(onLogout = {
+                                    authDone = false
+                                    onboardingDone = false
+                                })
                             }
-                            TextButton(onClick = { currentScreen = "walk" }) {
-                                Text("🗺️", color = if (currentScreen == "walk") Color(0xFF39D353) else Color(0xFF8B949E), fontSize = 20.sp)
-                            }
-                            TextButton(onClick = { currentScreen = "history" }) {
-                                Text("📅", color = if (currentScreen == "history") Color(0xFF39D353) else Color(0xFF8B949E), fontSize = 20.sp)
-                            }
-                            TextButton(onClick = { currentScreen = "achievements" }) {
-                                Text("🏆", color = if (currentScreen == "achievements") Color(0xFF39D353) else Color(0xFF8B949E), fontSize = 20.sp)
-                            }
-                            TextButton(onClick = { currentScreen = "stats" }) {
-                                Text("📊", color = if (currentScreen == "stats") Color(0xFF39D353) else Color(0xFF8B949E), fontSize = 20.sp)
-                            }
-                            TextButton(onClick = { currentScreen = "profile" }) {
-                                Text("👤", color = if (currentScreen == "profile") Color(0xFF39D353) else Color(0xFF8B949E), fontSize = 20.sp)
-                            }
+                        }
+
+                        NavigationBar(
+                            modifier = Modifier.align(Alignment.BottomCenter),
+                            containerColor = Color(0xFF161B22),
+                            tonalElevation = 0.dp
+                        ) {
+                            NavigationBarItem(
+                                selected = currentScreen == "home",
+                                onClick = { currentScreen = "home" },
+                                icon = { Icon(Icons.Filled.Home, contentDescription = "Home") },
+                                label = { Text("Home", fontSize = 10.sp) },
+                                colors = NavigationBarItemDefaults.colors(
+                                    selectedIconColor = Color(0xFF39D353),
+                                    selectedTextColor = Color(0xFF39D353),
+                                    unselectedIconColor = Color(0xFF8B949E),
+                                    unselectedTextColor = Color(0xFF8B949E),
+                                    indicatorColor = Color(0xFF39D353).copy(alpha = 0.15f)
+                                )
+                            )
+                            NavigationBarItem(
+                                selected = currentScreen == "walk",
+                                onClick = { currentScreen = "walk" },
+                                icon = { Icon(Icons.Filled.DirectionsWalk, contentDescription = "Walk") },
+                                label = { Text("Walk", fontSize = 10.sp) },
+                                colors = NavigationBarItemDefaults.colors(
+                                    selectedIconColor = Color(0xFF39D353),
+                                    selectedTextColor = Color(0xFF39D353),
+                                    unselectedIconColor = Color(0xFF8B949E),
+                                    unselectedTextColor = Color(0xFF8B949E),
+                                    indicatorColor = Color(0xFF39D353).copy(alpha = 0.15f)
+                                )
+                            )
+                            NavigationBarItem(
+                                selected = currentScreen == "history",
+                                onClick = { currentScreen = "history" },
+                                icon = { Icon(Icons.Filled.CalendarMonth, contentDescription = "History") },
+                                label = { Text("History", fontSize = 10.sp) },
+                                colors = NavigationBarItemDefaults.colors(
+                                    selectedIconColor = Color(0xFF39D353),
+                                    selectedTextColor = Color(0xFF39D353),
+                                    unselectedIconColor = Color(0xFF8B949E),
+                                    unselectedTextColor = Color(0xFF8B949E),
+                                    indicatorColor = Color(0xFF39D353).copy(alpha = 0.15f)
+                                )
+                            )
+                            NavigationBarItem(
+                                selected = currentScreen == "achievements",
+                                onClick = { currentScreen = "achievements" },
+                                icon = { Icon(Icons.Filled.EmojiEvents, contentDescription = "Achievements") },
+                                label = { Text("Awards", fontSize = 10.sp) },
+                                colors = NavigationBarItemDefaults.colors(
+                                    selectedIconColor = Color(0xFF39D353),
+                                    selectedTextColor = Color(0xFF39D353),
+                                    unselectedIconColor = Color(0xFF8B949E),
+                                    unselectedTextColor = Color(0xFF8B949E),
+                                    indicatorColor = Color(0xFF39D353).copy(alpha = 0.15f)
+                                )
+                            )
+                            NavigationBarItem(
+                                selected = currentScreen == "stats",
+                                onClick = { currentScreen = "stats" },
+                                icon = { Icon(Icons.Filled.InsertChart, contentDescription = "Stats") },
+                                label = { Text("Stats", fontSize = 10.sp) },
+                                colors = NavigationBarItemDefaults.colors(
+                                    selectedIconColor = Color(0xFF39D353),
+                                    selectedTextColor = Color(0xFF39D353),
+                                    unselectedIconColor = Color(0xFF8B949E),
+                                    unselectedTextColor = Color(0xFF8B949E),
+                                    indicatorColor = Color(0xFF39D353).copy(alpha = 0.15f)
+                                )
+                            )
+                            NavigationBarItem(
+                                selected = currentScreen == "profile",
+                                onClick = { currentScreen = "profile" },
+                                icon = { Icon(Icons.Filled.Person, contentDescription = "Profile") },
+                                label = { Text("Profile", fontSize = 10.sp) },
+                                colors = NavigationBarItemDefaults.colors(
+                                    selectedIconColor = Color(0xFF39D353),
+                                    selectedTextColor = Color(0xFF39D353),
+                                    unselectedIconColor = Color(0xFF8B949E),
+                                    unselectedTextColor = Color(0xFF8B949E),
+                                    indicatorColor = Color(0xFF39D353).copy(alpha = 0.15f)
+                                )
+                            )
                         }
                     }
                 }

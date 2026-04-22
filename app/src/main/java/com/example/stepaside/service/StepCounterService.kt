@@ -24,6 +24,8 @@ class StepCounterService : Service(), SensorEventListener {
     private var sensorStepsAtBoot = -1
     private var stepsToday = 0
     private var goalSteps = 10000
+    private var lastKnownDate = ""
+    private var isInitialized = false
 
     private val db get() = (application as StepAsideApp).database
     private val today get() = LocalDate.now().toString()
@@ -41,55 +43,88 @@ class StepCounterService : Service(), SensorEventListener {
         sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
         stepSensor = sensorManager.getDefaultSensor(Sensor.TYPE_STEP_COUNTER)
 
-        // Load today's existing steps
         serviceScope.launch {
-            val existing = db.dailyStepsDao().getByDate(today)
-            if (existing != null) {
-                stepsToday = existing.steps
-                goalSteps = existing.goalSteps
-            } else {
-                db.dailyStepsDao().upsert(DailySteps(dateStr = today, goalSteps = goalSteps))
+            initForToday()
+            withContext(Dispatchers.Main) {
+                stepSensor?.let {
+                    sensorManager.registerListener(
+                        this@StepCounterService, it,
+                        SensorManager.SENSOR_DELAY_NORMAL
+                    )
+                }
+                isInitialized = true
             }
-            // Init lifetime stats if first run
-            if (db.lifetimeStatsDao().get() == null) {
-                db.lifetimeStatsDao().upsert(LifetimeStats())
-            }
+        }
+    }
+
+    private suspend fun initForToday() {
+        val currentDay = today
+        lastKnownDate = currentDay
+
+        val existing = db.dailyStepsDao().getByDate(currentDay)
+        if (existing != null) {
+            stepsToday = existing.steps
+            goalSteps = existing.goalSteps
+        } else {
+            stepsToday = 0
+            db.dailyStepsDao().upsert(DailySteps(dateStr = currentDay, goalSteps = goalSteps))
+        }
+
+        // Reset sensor baseline so new day starts fresh
+        sensorStepsAtBoot = -1
+
+        if (db.lifetimeStatsDao().get() == null) {
+            db.lifetimeStatsDao().upsert(LifetimeStats())
         }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        stepSensor?.let {
-            sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_NORMAL)
-        }
         return START_STICKY
     }
 
     override fun onSensorChanged(event: SensorEvent?) {
+        if (!isInitialized) return
         if (event?.sensor?.type != Sensor.TYPE_STEP_COUNTER) return
+
         val totalSensorSteps = event.values[0].toInt()
+
+        // Check for midnight — new day!
+        val currentDay = today
+        if (currentDay != lastKnownDate) {
+            serviceScope.launch {
+                initForToday()
+            }
+            return
+        }
 
         if (sensorStepsAtBoot < 0) {
             sensorStepsAtBoot = totalSensorSteps - stepsToday
         }
 
-        val newStepsToday = totalSensorSteps - sensorStepsAtBoot
-        val stepDelta = newStepsToday - stepsToday  // hur många NYA steg sedan senaste läsning
+        val newStepsToday = (totalSensorSteps - sensorStepsAtBoot).coerceAtLeast(0)
+        val stepDelta = newStepsToday - stepsToday
         stepsToday = newStepsToday
         val goalReached = stepsToday >= goalSteps
 
         serviceScope.launch {
-            // Uppdatera dagens steg
-            db.dailyStepsDao().updateSteps(today, stepsToday, goalReached)
+            // Säkerställ att raden finns
+            val existing = db.dailyStepsDao().getByDate(currentDay)
+            if (existing == null) {
+                db.dailyStepsDao().upsert(
+                    DailySteps(dateStr = currentDay, steps = stepsToday, goalSteps = goalSteps, goalReached = goalReached)
+                )
+            } else {
+                db.dailyStepsDao().updateSteps(currentDay, stepsToday, goalReached)
+            }
 
-            // Uppdatera lifetime stats med delta
             if (stepDelta > 0) {
-                val distanceDelta = stepDelta * 0.762f  // meter per steg
-                val existing = db.lifetimeStatsDao().get()
-                if (existing != null) {
+                val distanceDelta = stepDelta * 0.762f
+                val lifetimeExisting = db.lifetimeStatsDao().get()
+                if (lifetimeExisting != null) {
                     db.lifetimeStatsDao().addSteps(stepDelta.toLong(), distanceDelta)
                 } else {
                     db.lifetimeStatsDao().upsert(
-                        com.example.stepaside.data.db.LifetimeStats(
+                        LifetimeStats(
                             totalSteps = stepDelta.toLong(),
                             totalDistanceMeters = distanceDelta
                         )
@@ -125,10 +160,12 @@ class StepCounterService : Service(), SensorEventListener {
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("StepAside")
             .setContentText("$steps steps · $remaining left to goal")
-            .setSmallIcon(android.R.drawable.ic_menu_directions)            .setContentIntent(pi)
+            .setSmallIcon(android.R.drawable.ic_menu_directions)
+            .setContentIntent(pi)
             .setOngoing(true)
             .build()
     }
+
     private fun updateWidget() {
         val appWidgetManager = AppWidgetManager.getInstance(this)
         val widgetComponent = ComponentName(this, StepWidget::class.java)
