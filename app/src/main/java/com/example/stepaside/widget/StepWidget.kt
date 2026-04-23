@@ -65,109 +65,50 @@ class StepWidget : AppWidgetProvider() {
          * 50%  → half green, half grey
          * 100% → full green border
          */
-        fun drawBorder(
-            steps: Int,
-            goal: Int,
-            widthPx: Int = 400,
-            heightPx: Int = 220,
-            cornerDp: Float = 20f,
-            strokeDp: Float = 4f
-        ): Bitmap {
-            val density   = 3f                          // ~xxhdpi
-            val stroke    = strokeDp * density
-            val corner    = cornerDp * density
-            val half      = stroke / 2f
-
-            val bitmap = Bitmap.createBitmap(widthPx, heightPx, Bitmap.Config.ARGB_8888)
+        private fun drawBorder(steps: Int, goal: Int): Bitmap {
+            val width = 300
+            val height = 180
+            val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
             val canvas = Canvas(bitmap)
 
-            val rect = RectF(half, half, widthPx - half, heightPx - half)
+            val radius = 40f
+            val stroke = 8f
+            val inset = stroke / 2
 
-            val progress = (steps.toFloat() / goal.toFloat()).coerceIn(0f, 1f)
+            val rect = RectF(inset, inset, width - inset, height - inset)
+            val path = Path()
+            path.addRoundRect(rect, radius, radius, Path.Direction.CW)
 
-            // Perimeter of the rounded rect
-            val w = rect.width()
-            val h = rect.height()
-            val r = corner
-            // straight segments + 4 quarter-circle arcs
-            val straightW  = w - 2 * r
-            val straightH  = h - 2 * r
-            val arcLen     = (Math.PI * r).toFloat()    // quarter arc = π*r/2, but 4 of them = 2πr
-            val perimeter  = 2 * straightW + 2 * straightH + 2 * Math.PI.toFloat() * r
-            val greenLen   = progress * perimeter
+            val pathMeasure = PathMeasure(path, false)
+            val totalLength = pathMeasure.length
+            val progress = (steps.toFloat() / goal).coerceIn(0f, 1f)
 
-            // Base paint — grey track
-            val trackPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                style       = Paint.Style.STROKE
+            // 1. Draw full background ring in dark green
+            val bgPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                style = Paint.Style.STROKE
                 strokeWidth = stroke
-                color       = Color.parseColor("#21262D")
-                strokeCap   = Paint.Cap.BUTT
+                color = android.graphics.Color.parseColor("#1A3D1A")
+                strokeCap = Paint.Cap.ROUND
             }
-            val greenPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                style       = Paint.Style.STROKE
-                strokeWidth = stroke
-                color       = Color.parseColor("#39D353")
-                strokeCap   = Paint.Cap.ROUND
-            }
+            canvas.drawPath(path, bgPaint)
 
-            // Draw full grey border first
-            val path = buildRoundRectPath(rect, corner)
-            canvas.drawPath(path, trackPaint)
+            // 2. Draw progress arc on top in bright green
+            if (progress > 0f) {
+                val progressPath = Path()
+                pathMeasure.getSegment(0f, totalLength * progress, progressPath, true)
 
-            // Draw green progress on top using PathMeasure
-            if (greenLen > 0f) {
-                val measure = PathMeasure(path, false)
-                val totalLen = measure.length
-
-                // Start from top-center: offset into the path
-                // Path starts at top-left corner arc; top-center is at straightW/2 + quarter-arc
-                val topCenterOffset = (Math.PI * r / 2).toFloat() + straightW / 2f
-                val startOffset = topCenterOffset
-
-                val greenPath = Path()
-                // We draw from startOffset, wrapping around if needed
-                val endOffset = startOffset + greenLen
-
-                if (endOffset <= totalLen) {
-                    measure.getSegment(startOffset, endOffset, greenPath, true)
-                } else {
-                    // Wrap: draw to end, then from beginning
-                    measure.getSegment(startOffset, totalLen, greenPath, true)
-                    val wrapPath = Path()
-                    measure.getSegment(0f, endOffset - totalLen, wrapPath, true)
-                    greenPath.addPath(wrapPath)
+                val fgPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                    style = Paint.Style.STROKE
+                    strokeWidth = stroke
+                    color = android.graphics.Color.parseColor("#39D353")
+                    strokeCap = Paint.Cap.ROUND
                 }
-
-                greenPaint.strokeCap = Paint.Cap.ROUND
-                canvas.drawPath(greenPath, greenPaint)
+                canvas.drawPath(progressPath, fgPaint)
             }
 
             return bitmap
         }
 
-        private fun buildRoundRectPath(rect: RectF, r: Float): Path {
-            // Build path starting from top-left arc, going clockwise
-            // so top-center is a known offset into the path
-            return Path().apply {
-                moveTo(rect.left + r, rect.top)
-                // Top edge →
-                lineTo(rect.right - r, rect.top)
-                // Top-right arc
-                arcTo(RectF(rect.right - 2*r, rect.top, rect.right, rect.top + 2*r), -90f, 90f, false)
-                // Right edge ↓
-                lineTo(rect.right, rect.bottom - r)
-                // Bottom-right arc
-                arcTo(RectF(rect.right - 2*r, rect.bottom - 2*r, rect.right, rect.bottom), 0f, 90f, false)
-                // Bottom edge ←
-                lineTo(rect.left + r, rect.bottom)
-                // Bottom-left arc
-                arcTo(RectF(rect.left, rect.bottom - 2*r, rect.left + 2*r, rect.bottom), 90f, 90f, false)
-                // Left edge ↑
-                lineTo(rect.left, rect.top + r)
-                // Top-left arc
-                arcTo(RectF(rect.left, rect.top, rect.left + 2*r, rect.top + 2*r), 180f, 90f, false)
-                close()
-            }
-        }
+
     }
 }
