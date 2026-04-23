@@ -17,6 +17,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -35,10 +36,12 @@ fun StepScreen() {
     val today = LocalDate.now().toString()
 
     LaunchedEffect(Unit) {
-        db.dailyStepsDao().getAllFlow().collectLatest { list ->
-            val todayData = list.firstOrNull { it.dateStr == today }
+        while (true) {
+            val todayStr = LocalDate.now().toString()
+            val todayData = db.dailyStepsDao().getByDate(todayStr)
             steps = todayData?.steps ?: 0
             goal = todayData?.goalSteps ?: 10000
+            delay(60_000)
         }
     }
 

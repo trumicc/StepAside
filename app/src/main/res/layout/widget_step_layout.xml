@@ -1,28 +1,49 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:gravity="center"
-    android:background="@drawable/widget_background"
-    android:padding="12dp">
+    android:background="@drawable/widget_background">
 
-    <TextView
-        android:id="@+id/widget_steps"
+    <!-- Progress border drawn as bitmap around the edges -->
+    <ImageView
+        android:id="@+id/widget_ring"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="fitXY" />
+
+    <!-- Text content -->
+    <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="0"
-        android:textSize="28sp"
-        android:textStyle="bold"
-        android:textColor="#FFFFFF" />
+        android:layout_gravity="center"
+        android:orientation="vertical"
+        android:gravity="center">
 
-    <TextView
-        android:id="@+id/widget_remaining"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="10,000 to goal"
-        android:textSize="11sp"
-        android:textColor="#39D353"
-        android:layout_marginTop="2dp" />
+        <TextView
+            android:id="@+id/widget_steps"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="0"
+            android:textSize="36sp"
+            android:textStyle="bold"
+            android:textColor="#FFFFFF" />
 
-</LinearLayout>
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="steps"
+            android:textSize="12sp"
+            android:textColor="#8B949E" />
+
+        <TextView
+            android:id="@+id/widget_remaining"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="10,000 to goal"
+            android:textSize="12sp"
+            android:textColor="#39D353" />
+
+    </LinearLayout>
+
+</FrameLayout>
