@@ -10,4 +10,5 @@ data class DailySteps(
     val steps: Int = 0,
     val goalSteps: Int = 10000,
     val goalReached: Boolean = false
+
 )
