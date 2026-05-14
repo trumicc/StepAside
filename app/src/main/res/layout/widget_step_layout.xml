@@ -1,13 +1,35 @@
 <?xml version="1.0" encoding="utf-8"?>
+<<<<<<< Updated upstream
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+=======
+<!--
+    StepAside widget layout (2x3 cells).
+
+    Contains ALL four text views referenced by StepWidget.kt:
+      - widget_steps     (main step count)
+      - widget_remaining (steps to goal)
+      - widget_distance  (km)
+      - widget_calories  (kcal)
+      - widget_ring      (progress ring bitmap)
+
+    Tapping anywhere on the widget opens the app.
+-->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root"
+>>>>>>> Stashed changes
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/widget_background">
 
+<<<<<<< Updated upstream
+=======
+    <!-- Progress ring drawn as bitmap behind everything -->
+>>>>>>> Stashed changes
     <ImageView
         android:id="@+id/widget_ring"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+<<<<<<< Updated upstream
         android:scaleType="fitXY" />
 
     <LinearLayout
@@ -103,3 +125,74 @@
     </LinearLayout>
 
 </FrameLayout>
+=======
+        android:contentDescription="@null"
+        android:scaleType="fitXY" />
+
+    <!-- Center column: steps + remaining -->
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:orientation="vertical"
+        android:gravity="center">
+
+        <TextView
+            android:id="@+id/widget_steps"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="0"
+            android:textColor="#FFFFFF"
+            android:textSize="36sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/widget_label_steps"
+            android:textColor="#8B949E"
+            android:textSize="12sp" />
+
+        <TextView
+            android:id="@+id/widget_remaining"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="@string/widget_default_remaining"
+            android:textColor="#39D353"
+            android:textSize="12sp" />
+    </LinearLayout>
+
+    <!-- Bottom row: distance + calories -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|center_horizontal"
+        android:layout_marginBottom="12dp"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:weightSum="2">
+
+        <TextView
+            android:id="@+id/widget_distance"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text="0.0 km"
+            android:textColor="#FFFFFF"
+            android:textSize="11sp" />
+
+        <TextView
+            android:id="@+id/widget_calories"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text="0 kcal"
+            android:textColor="#FFFFFF"
+            android:textSize="11sp" />
+    </LinearLayout>
+
+</FrameLayout>
+>>>>>>> Stashed changes

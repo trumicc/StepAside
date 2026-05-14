@@ -1,21 +1,63 @@
-# Add project specific ProGuard rules here.
-# You can control the set of applied configuration files using the
-# proguardFiles setting in build.gradle.
-#
-# For more details, see
-#   http://developer.android.com/guide/developing/tools/proguard.html
+# =====================================================================
+# StepAside — ProGuard / R8 rules
+# =====================================================================
 
-# If your project uses WebView with JS, uncomment the following
-# and specify the fully qualified class name to the JavaScript interface
-# class:
-#-keepclassmembers class fqcn.of.javascript.interface.for.webview {
-#   public *;
-#}
+# Keep line numbers for crash reports
+-keepattributes SourceFile,LineNumberTable
+-renamesourcefileattribute SourceFile
 
-# Uncomment this to preserve the line number information for
-# debugging stack traces.
-#-keepattributes SourceFile,LineNumberTable
+# ---------------- kotlinx.serialization ----------------
+# Keep all classes annotated with @Serializable (and their companions/serializers)
+-keepattributes *Annotation*, InnerClasses
+-dontnote kotlinx.serialization.AnnotationsKt
 
-# If you keep the line number information, uncomment this to
-# hide the original source file name.
-#-renamesourcefileattribute SourceFile
+-keep,includedescriptorclasses class io.stepaside.app.**$$serializer { *; }
+-keepclassmembers class io.stepaside.app.** {
+    *** Companion;
+}
+-keepclasseswithmembers class io.stepaside.app.** {
+    kotlinx.serialization.KSerializer serializer(...);
+}
+
+# Generic serializer keep rules
+-keep,includedescriptorclasses class **$$serializer { *; }
+-keepclassmembers class ** {
+    *** Companion;
+}
+-keepclasseswithmembers class ** {
+    kotlinx.serialization.KSerializer serializer(...);
+}
+
+# ---------------- Ktor ----------------
+-dontwarn io.ktor.**
+-keep class io.ktor.** { *; }
+-keep class kotlinx.coroutines.** { *; }
+-keepclassmembernames class kotlinx.** {
+    volatile <fields>;
+}
+
+# ---------------- Supabase ----------------
+-keep class io.github.jan.supabase.** { *; }
+-dontwarn io.github.jan.supabase.**
+
+# ---------------- Room ----------------
+-keep class * extends androidx.room.RoomDatabase
+-keep @androidx.room.Entity class *
+-dontwarn androidx.room.paging.**
+
+# ---------------- App-specific data classes (Serializable DTOs) ----------------
+-keep class io.stepaside.app.data.remote.** { *; }
+-keep class io.stepaside.app.ProfileUpsert { *; }
+-keep class io.stepaside.app.sync.** { *; }
+
+# ---------------- Compose ----------------
+# Compose handles itself, but keep these for safety
+-keep class androidx.compose.runtime.** { *; }
+
+# ---------------- General Kotlin ----------------
+-keep class kotlin.Metadata { *; }
+-keep class kotlin.reflect.** { *; }
+-dontwarn kotlin.reflect.**
+
+# Suppress harmless warnings
+-dontwarn java.lang.invoke.StringConcatFactory

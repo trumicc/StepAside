@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    StepAside network security config.
+    Blocks all cleartext (HTTP) traffic — only HTTPS is allowed.
+    This is required for Play Store privacy compliance and Supabase TLS.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>
