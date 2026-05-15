@@ -1,15 +1,49 @@
+# =====================================================================
+# StepAside — .gitignore
+# =====================================================================
+
+# Secrets — NEVER commit these
+local.properties
+keystore.properties
+*.jks
+*.keystore
+google-services.json
+
+# Build outputs
 *.iml
-.gradle
+.gradle/
 /local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
-.DS_Store
+/.idea/
 /build
 /captures
 .externalNativeBuild
 .cxx
 local.properties
+
+# Android Studio
+.idea/
+*.iml
+.DS_Store
+
+# Gradle
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+# Generated files
+bin/
+gen/
+out/
+release/
+
+# Proguard
+proguard/
+
+# Log files
+*.log
+
+# OS files
+Thumbs.db
+.DS_Store

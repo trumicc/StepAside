@@ -1,9 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base theme — Compose handles all UI styling, but Android needs a base -->
-    <style name="Theme.StepAside" parent="Theme.Material3.DayNight.NoActionBar">
+    <!--
+        Base theme — Compose handles all UI styling, this is just what Android
+        needs for the activity attribute. We extend a Material parent so the
+        manifest reference resolves without pulling in Material View widgets.
+    -->
+    <style name="Theme.StepAside" parent="android:Theme.Material.NoActionBar">
         <item name="android:statusBarColor" tools:targetApi="l">@android:color/transparent</item>
         <item name="android:windowLightStatusBar" tools:targetApi="m">false</item>
         <item name="android:navigationBarColor" tools:targetApi="l">@android:color/transparent</item>
+        <item name="android:windowBackground">@color/bg_primary</item>
     </style>
 </resources>

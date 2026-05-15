@@ -1,8 +1,4 @@
-<<<<<<< Updated upstream:app/src/main/java/com/example/stepaside/OnboardingScreen.kt
-package com.example.stepaside
-=======
 package io.stepaside.app
->>>>>>> Stashed changes:app/src/main/java/io/stepaside/app/OnboardingScreen.kt
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background

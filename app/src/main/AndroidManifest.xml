@@ -19,12 +19,6 @@
 
     <!-- Networking for Supabase sync -->
     <uses-permission android:name="android.permission.INTERNET" />
-<<<<<<< Updated upstream
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_HEALTH" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_HEALTH" />
-    <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
-    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
-=======
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
     <!-- Auto-restart step counter after boot -->
@@ -35,7 +29,6 @@
         android:name="android.hardware.sensor.stepcounter"
         android:required="true" />
 
->>>>>>> Stashed changes
     <application
         android:name=".StepAsideApp"
         android:allowBackup="false"
@@ -69,10 +62,6 @@
             android:name=".service.LocationTrackingService"
             android:foregroundServiceType="location"
             android:exported="false" />
-        <service
-            android:name=".service.StepCounterService"
-            android:foregroundServiceType="health"
-            android:exported="false" />
 
         <receiver
             android:name=".receiver.BootReceiver"
@@ -96,18 +85,7 @@
                 android:name="android.appwidget.provider"
                 android:resource="@xml/step_widget_info" />
         </receiver>
-<<<<<<< Updated upstream
-        <receiver
-            android:name=".receiver.BootReceiver"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.BOOT_COMPLETED"/>
-                <action android:name="android.intent.action.QUICKBOOT_POWERON"/>
-            </intent-filter>
-        </receiver>
-=======
 
->>>>>>> Stashed changes
     </application>
 
 </manifest>
